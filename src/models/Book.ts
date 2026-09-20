@@ -1,4 +1,5 @@
 import { IBook } from './interfaces/IBook';
+import { BookData } from '../types';
 
 export class Book implements IBook {
   private _isBorrowed = false;
@@ -63,5 +64,26 @@ export class Book implements IBook {
 
     this._isBorrowed = false;
     this._borrowedBy = null;
+  }
+
+  toData(): BookData {
+    return {
+      id: this.id,
+      title: this.title,
+      author: this.author,
+      year: this.year,
+      isBorrowed: this.isBorrowed,
+      borrowedBy: this.borrowedBy,
+    };
+  }
+
+  static fromData(data: BookData): Book {
+    const book = new Book(data.id, data.title, data.author, data.year);
+
+    if (data.isBorrowed && data.borrowedBy) {
+      book.borrow(data.borrowedBy);
+    }
+
+    return book;
   }
 }
