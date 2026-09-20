@@ -5,15 +5,26 @@ import { Book } from './models/Book';
 import { User } from './models/User';
 import { Library } from './services/Library';
 import { Storage } from './services/Storage';
-import { BookData, UserData } from './types';
-import { generateId } from './utils/idGenerator';
-import { renderApp } from './ui/render';
 import { BorrowService } from './services/BorrowService';
 import { NotificationService } from './services/NotificationService';
+
+import type { BookData, UserData } from './types';
+import type { BookSort } from './ui/components/BookControls';
+
+import { generateId } from './utils/idGenerator';
+import { renderApp } from './ui/render';
 import { showUserIdModal } from './ui/components/Modal';
 
 const BOOKS_STORAGE_KEY = 'library-books';
 const USERS_STORAGE_KEY = 'library-users';
+
+const PAGE_SIZE = 5;
+
+let bookSearch = '';
+let bookSort: BookSort = 'title-asc';
+
+let bookPage = 1;
+let userPage = 1;
 
 function getAppRoot(): HTMLElement {
   const app = document.getElementById('app');
@@ -29,6 +40,7 @@ const app = getAppRoot();
 
 const bookLibrary = new Library<Book>();
 const userLibrary = new Library<User>();
+
 const storage = new Storage();
 const borrowService = new BorrowService();
 const notificationService = new NotificationService();
@@ -58,10 +70,76 @@ function saveState(): void {
 }
 
 function render(): void {
+  const allBooks = [...bookLibrary.getAll()];
+  const allUsers = [...userLibrary.getAll()];
+
+  const normalizedSearch = bookSearch.trim().toLowerCase();
+
+  const filteredBooks = allBooks.filter((book) => {
+    if (!normalizedSearch) {
+      return true;
+    }
+
+    return (
+      book.title.toLowerCase().includes(normalizedSearch) ||
+      book.author.toLowerCase().includes(normalizedSearch)
+    );
+  });
+
+  filteredBooks.sort((a, b) => {
+    switch (bookSort) {
+      case 'title-desc':
+        return b.title.localeCompare(a.title);
+
+      case 'author-asc':
+        return a.author.localeCompare(b.author);
+
+      case 'year-desc':
+        return b.year - a.year;
+
+      case 'year-asc':
+        return a.year - b.year;
+
+      case 'title-asc':
+      default:
+        return a.title.localeCompare(b.title);
+    }
+  });
+
+  const totalBookPages = Math.max(
+    1,
+    Math.ceil(filteredBooks.length / PAGE_SIZE)
+  );
+
+  const totalUserPages = Math.max(1, Math.ceil(allUsers.length / PAGE_SIZE));
+
+  bookPage = Math.min(bookPage, totalBookPages);
+  userPage = Math.min(userPage, totalUserPages);
+
+  const bookStart = (bookPage - 1) * PAGE_SIZE;
+
+  const visibleBooks = filteredBooks.slice(bookStart, bookStart + PAGE_SIZE);
+
+  const userStart = (userPage - 1) * PAGE_SIZE;
+
+  const visibleUsers = allUsers.slice(userStart, userStart + PAGE_SIZE);
+
   renderApp({
     root: app,
-    books: bookLibrary.getAll(),
-    users: userLibrary.getAll(),
+
+    books: visibleBooks,
+    users: visibleUsers,
+
+    bookSearch,
+    bookSort,
+
+    bookPage,
+    userPage,
+
+    totalBooks: filteredBooks.length,
+    totalUsers: allUsers.length,
+
+    pageSize: PAGE_SIZE,
 
     onAddBook: (data) => {
       const book = new Book(generateId(), data.title, data.author, data.year);
@@ -80,6 +158,7 @@ function render(): void {
       saveState();
       render();
     },
+
     onBorrowBook: (book) => {
       showUserIdModal((userId) => {
         const user = userLibrary.findById(userId);
@@ -143,6 +222,60 @@ function render(): void {
           error instanceof Error ? error.message : 'Не вдалося повернути книгу.'
         );
       }
+    },
+
+    onDeleteBook: (book) => {
+      if (book.isBorrowed) {
+        notificationService.show(
+          'Спочатку поверніть книгу, а потім видаліть її.'
+        );
+        return;
+      }
+
+      bookLibrary.removeItem(book.id);
+
+      saveState();
+      render();
+
+      notificationService.show(`Книгу "${book.title}" видалено.`);
+    },
+
+    onDeleteUser: (user) => {
+      if (user.borrowedBookIds.length > 0) {
+        notificationService.show(
+          'Неможливо видалити користувача, поки він має позичені книги.'
+        );
+        return;
+      }
+
+      userLibrary.removeItem(user.id);
+
+      saveState();
+      render();
+
+      notificationService.show(`Користувача ${user.name} видалено.`);
+    },
+
+    onSearchChange: (value) => {
+      bookSearch = value;
+      bookPage = 1;
+      render();
+    },
+
+    onSortChange: (value) => {
+      bookSort = value;
+      bookPage = 1;
+      render();
+    },
+
+    onBookPageChange: (page) => {
+      bookPage = page;
+      render();
+    },
+
+    onUserPageChange: (page) => {
+      userPage = page;
+      render();
     },
   });
 }
