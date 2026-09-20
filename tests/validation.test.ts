@@ -36,5 +36,19 @@ describe('Validation', () => {
     it('returns false for an invalid email', () => {
       expect(Validation.validEmail('student-example.com')).to.equal(false);
     });
+
+    it('returns false when year does not contain four digits', () => {
+      expect(Validation.validYear('22')).to.equal(false);
+    });
+
+    describe('validUserId', () => {
+      it('returns true when id contains only digits', () => {
+        expect(Validation.validUserId('175833394038')).to.equal(true);
+      });
+
+      it('returns false when id contains non-digit characters', () => {
+        expect(Validation.validUserId('123abc')).to.equal(false);
+      });
+    });
   });
 });
