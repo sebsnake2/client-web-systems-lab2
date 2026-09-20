@@ -4,10 +4,11 @@ interface BookListOptions {
   books: readonly Book[];
   onBorrow: (book: Book) => void;
   onReturn: (book: Book) => void;
+  onDelete: (book: Book) => void;
 }
 
 export function createBookList(options: BookListOptions): HTMLElement {
-  const { books, onBorrow, onReturn } = options;
+  const { books, onBorrow, onReturn, onDelete } = options;
 
   const card = document.createElement('div');
   card.className = 'card shadow-sm mb-4';
@@ -39,6 +40,9 @@ export function createBookList(options: BookListOptions): HTMLElement {
       const info = document.createElement('span');
       info.textContent = `${book.title} by ${book.author} (${book.year})`;
 
+      const actions = document.createElement('div');
+      actions.className = 'd-flex gap-2';
+
       const button = document.createElement('button');
 
       if (book.isBorrowed) {
@@ -57,7 +61,17 @@ export function createBookList(options: BookListOptions): HTMLElement {
         });
       }
 
-      item.append(info, button);
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'btn btn-danger btn-sm';
+      deleteButton.textContent = 'Видалити';
+
+      deleteButton.addEventListener('click', () => {
+        onDelete(book);
+      });
+
+      actions.append(button, deleteButton);
+      item.append(info, actions);
+
       list.appendChild(item);
     }
 

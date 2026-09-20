@@ -1,6 +1,13 @@
 import { User } from '../../models/User';
 
-export function createUserList(users: readonly User[]): HTMLElement {
+interface UserListOptions {
+  users: readonly User[];
+  onDelete: (user: User) => void;
+}
+
+export function createUserList(options: UserListOptions): HTMLElement {
+  const { users, onDelete } = options;
+
   const card = document.createElement('div');
   card.className = 'card shadow-sm mb-4';
 
@@ -25,10 +32,21 @@ export function createUserList(users: readonly User[]): HTMLElement {
 
     for (const user of users) {
       const item = document.createElement('div');
-      item.className = 'list-group-item';
+      item.className =
+        'list-group-item d-flex justify-content-between align-items-center gap-3';
 
-      item.textContent = `${user.id} ${user.name} (${user.email})`;
+      const info = document.createElement('span');
+      info.textContent = `${user.id} ${user.name} (${user.email})`;
 
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'btn btn-danger btn-sm';
+      deleteButton.textContent = 'Видалити';
+
+      deleteButton.addEventListener('click', () => {
+        onDelete(user);
+      });
+
+      item.append(info, deleteButton);
       list.appendChild(item);
     }
 
