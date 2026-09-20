@@ -1,4 +1,5 @@
 import { IUser } from './interfaces/IUser';
+import { UserData } from '../types';
 
 export class User implements IUser {
   private _borrowedBookIds: string[] = [];
@@ -41,5 +42,24 @@ export class User implements IUser {
 
   removeBorrowedBook(bookId: string): void {
     this._borrowedBookIds = this._borrowedBookIds.filter((id) => id !== bookId);
+  }
+
+  toData(): UserData {
+    return {
+      id: this.id,
+      name: this.name,
+      email: this.email,
+      borrowedBookIds: [...this.borrowedBookIds],
+    };
+  }
+
+  static fromData(data: UserData): User {
+    const user = new User(data.id, data.name, data.email);
+
+    for (const bookId of data.borrowedBookIds) {
+      user.addBorrowedBook(bookId);
+    }
+
+    return user;
   }
 }
