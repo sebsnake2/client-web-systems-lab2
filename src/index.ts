@@ -6,7 +6,7 @@ import { User } from './models/User';
 import { Library } from './services/Library';
 import { Storage } from './services/Storage';
 import { BorrowService } from './services/BorrowService';
-import { NotificationService } from './services/NotificationService';
+import { NotificationService } from './ui/NotificationService';
 
 import type { BookData, UserData } from './types';
 import type { BookSort } from './ui/components/BookControls';
